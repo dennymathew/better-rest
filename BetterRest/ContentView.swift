@@ -11,9 +11,6 @@ struct ContentView: View {
     @State private var wakeUpTime = defaultWakeUpTime
     @State private var sleepAmount = 8.0
     @State private var coffeeAmount = 1
-    @State private var alertTitle = ""
-    @State private var alertMessage = ""
-    @State private var isShowingAlert = false
     private static var defaultWakeUpTime: Date {
         var components = DateComponents()
         components.hour = 7
@@ -39,32 +36,36 @@ struct ContentView: View {
     }
     var body: some View {
         NavigationView {
-            Form {
-                Text("When do you want to wake up?")
-                    .font(.headline)
-                DatePicker(ContentView.nickName(wakeUpTime), selection: $wakeUpTime, displayedComponents: .hourAndMinute)
-                Text("Desired amount of sleep")
-                    .font(.headline)
-                Stepper(value: $sleepAmount, in: 4...12, step: 0.25) {
-                    Text("\(sleepAmount, specifier: "%g") hours")
+            VStack {
+                Form {
+                    Text("When do you want to wake up?")
+                        .font(.headline)
+                    DatePicker(ContentView.nickName(wakeUpTime), selection: $wakeUpTime, displayedComponents: .hourAndMinute)
+                    Text("Desired amount of sleep")
+                        .font(.headline)
+                    Stepper(value: $sleepAmount, in: 4...12, step: 0.25) {
+                        Text("\(sleepAmount, specifier: "%g") hours")
+                    }
+                    Text("Daily coffee intake")
+                        .font(.headline)
+                    Stepper(value: $coffeeAmount, in: 0...20) {
+                        let suffix = coffeeAmount == 1 ? "cup" : "cups"
+                        Text("\(coffeeAmount) " + suffix)
+                    }
                 }
-                Text("Daily coffee intake")
-                    .font(.headline)
-                Stepper(value: $coffeeAmount, in: 0...20) {
-                    let suffix = coffeeAmount == 1 ? "cup" : "cups"
-                    Text("\(coffeeAmount) " + suffix)
-                }
+                let bedTime = self.bedTime
+                Text(bedTime.0)
+                Text(bedTime.1)
+                    .font(.largeTitle)
+                    .fontWeight(.black)
+                    .foregroundColor(Color.orange)
+                Spacer()
             }
-            .padding()
-            .navigationBarTitle("Better Rest")
-            .navigationBarItems(trailing: Button(action: calculateBedTime) {Text("Calculate")}
-            )
+            .navigationBarTitle("Better Sleep")
+            .foregroundColor(.orange)
         }
-        .alert(isPresented: $isShowingAlert, content: {
-            Alert(title: Text(alertTitle), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-        })
     }
-    func calculateBedTime() {
+    var bedTime: (String, String) {
         let sleepCalculator = SleepCalculator()
         let components = Calendar.current.dateComponents([.hour, .minute], from: wakeUpTime)
         let hour = (components.hour ?? 0) * 60 * 60
@@ -74,13 +75,10 @@ struct ContentView: View {
             let sleepTime = wakeUpTime - prediction.actualSleep
             let formatter = DateFormatter()
             formatter.timeStyle = .short
-            alertMessage = formatter.string(from: sleepTime)
-            alertTitle = "Your ideal bedtime is:"
+            return ("Your ideal bedtime", formatter.string(from: sleepTime))
         } catch {
-            alertTitle = "Error"
-            alertMessage = "Sorry, we encountered an error while calculating your bedtime."
+            return ("Sorry, we encountered an error while calculating your bedtime.", "")
         }
-        isShowingAlert = true
     }
 }
 
